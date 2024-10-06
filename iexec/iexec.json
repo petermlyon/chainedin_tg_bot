@@ -1,0 +1,18 @@
+{
+  "description": "My iExec resource description, must be at least 150 chars long in order to pass the validation checks. Describe your application, dataset or workerpool to your users",
+  "license": "MIT",
+  "author": "?",
+  "social": {
+    "website": "?",
+    "github": "?"
+  },
+  "logo": "logo.png",
+  "buyConf": {},
+  "app": {
+    "owner": "0x71ddC361944E079b5376eaB02d90A5e8b9c3675D",
+    "name": "botdocker",
+    "type": "DOCKER",
+    "multiaddr": "docker.io/petermlyon/botdocker:1.0.0",
+    "checksum": "0xaea3f77f09567fa0da20b86d9b7dac3ef958b7d4751a37cfa7cd7851f57ac191"
+  }
+}

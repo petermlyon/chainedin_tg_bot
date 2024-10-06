@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>bot.js</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <link rel="stylesheet" media="all" href="doc-style.css" />
+  <script src="doc-filelist.js"></script>
+  <script>
+    var relativeDir = "";
+    var thisFile = "bot.js";
+    var defaultSidebar = true;
+  </script>
+  <script src="doc-script.js"></script>
+
+</head>
+<body>
+  <div id="sidebar_wrapper">
+    <div id="sidebar_switch">
+      <span class="tree">Files</span>
+      <span class="headings">Headings</span>
+    </div>
+    <div id="tree"></div>
+    <div id="headings">
+
+    </div>
+  </div>
+  <div id="sidebar-toggle"></div>
+  <div id="container">
+    <div class="background highlight"></div>
+<table cellpadding="0" cellspacing="0">
+  <tbody>
+    
+      <tr>
+        <td class="docs">
+          <h1>bot.js</h1>
+        </td>
+        <td class="code highlight"></td>
+      </tr>
+    
+    
+      <tr>
+        <td class="docs">
+          <div class="pilwrap">
+  <a class="pilcrow" href="#section-1" id="section-1"></a>
+</div>
+
+        </td>
+        <td class="code highlight">
+          <pre class="javascript"><span class="hljs-keyword">let</span> TelegramBot = <span class="hljs-built_in">require</span>(<span class="hljs-string">'node-telegram-bot-api'</span>);
+<span class="hljs-keyword">let</span> argon2 = <span class="hljs-built_in">require</span>(<span class="hljs-string">'argon2'</span>);
+<span class="hljs-keyword">const</span> { Web3 } = <span class="hljs-built_in">require</span>(<span class="hljs-string">"web3"</span>);
+<span class="hljs-keyword">let</span> abi = <span class="hljs-built_in">require</span>(<span class="hljs-string">'./abi.json'</span>);
+
+<span class="hljs-keyword">var</span> PROVIDER = <span class="hljs-string">"https://rpc2.sepolia.org/"</span> <span class="hljs-comment">// I've also tried 30303</span>
+
+</pre>
+        </td>
+      </tr>
+    
+      <tr>
+        <td class="docs">
+          <div class="pilwrap">
+  <a class="pilcrow" href="#section-2" id="section-2"></a>
+</div>
+<p>This line establishes a connection instance</p>
+
+        </td>
+        <td class="code highlight">
+          <pre class="javascript"><span class="hljs-keyword">const</span> web3 = <span class="hljs-keyword">new</span> Web3(PROVIDER);
+<span class="hljs-keyword">const</span> token = <span class="hljs-string">'7902551174:AAExztQ-ifmyfMdRhtaipY-cH_YKWtkvkVU'</span>;
+<span class="hljs-keyword">const</span> bot = <span class="hljs-keyword">new</span> TelegramBot(token, { <span class="hljs-attr">polling</span>: <span class="hljs-literal">true</span> });
+<span class="hljs-keyword">const</span> myContract = <span class="hljs-keyword">new</span> web3.eth.Contract(abi, <span class="hljs-string">"0x72712969B36F0B31aa7900b517D63dD1488E8466"</span>);
+
+<span class="hljs-keyword">let</span> chatStatus = {}
+<span class="hljs-keyword">let</span> walletChats = {}
+
+<span class="hljs-keyword">const</span> getWalletForUser = <span class="hljs-keyword">async</span> (username) =&gt; {
+  <span class="hljs-keyword">let</span> userAddr = <span class="hljs-keyword">await</span> myContract.methods.userAddress(username.toLowerCase()).call();
+  <span class="hljs-keyword">if</span> (userAddr == <span class="hljs-string">"0x0000000000000000000000000000000000000000"</span>) {
+    <span class="hljs-keyword">throw</span>({});
+  }
+
+  <span class="hljs-keyword">return</span> userAddr
+}
+
+<span class="hljs-keyword">const</span> loginThisUser = <span class="hljs-keyword">async</span> (username, tgId) =&gt; {
+</pre>
+        </td>
+      </tr>
+    
+      <tr>
+        <td class="docs">
+          <div class="pilwrap">
+  <a class="pilcrow" href="#section-3" id="section-3"></a>
+</div>
+<p>check chain for user
+if exists, check hash of tgId</p>
+
+        </td>
+        <td class="code highlight">
+          <pre class="javascript">  <span class="hljs-keyword">let</span> wallet = <span class="hljs-keyword">await</span> getWalletForUser(username)
+  <span class="hljs-built_in">console</span>.log(wallet);
+  <span class="hljs-keyword">let</span> userData = <span class="hljs-keyword">await</span> myContract.methods.userData(wallet).call();
+  <span class="hljs-built_in">console</span>.log(userData);
+  <span class="hljs-keyword">if</span> (userData.tgHash) {
+    <span class="hljs-keyword">if</span> (<span class="hljs-keyword">await</span> argon2.verify(userData.tgHash, tgId)) {
+      <span class="hljs-keyword">return</span> wallet;
+    } <span class="hljs-keyword">else</span> {
+      <span class="hljs-keyword">throw</span>({})
+    }
+  } <span class="hljs-keyword">else</span> {
+    <span class="hljs-keyword">throw</span>({});
+  }
+}
+
+bot.on(<span class="hljs-string">'message'</span>, (msg) =&gt; {
+  <span class="hljs-keyword">const</span> chatId = msg.chat.id;
+  <span class="hljs-keyword">const</span> messageText = msg.text;
+  <span class="hljs-keyword">const</span> firstWord = messageText.split(<span class="hljs-string">' '</span>)[<span class="hljs-number">0</span>]
+
+  <span class="hljs-keyword">if</span> (chatStatus[chatId]?.entryMode) {
+    <span class="hljs-keyword">switch</span> (chatStatus[chatId].entryMode) {
+      <span class="hljs-keyword">case</span> <span class="hljs-string">'/start'</span>:
+        <span class="hljs-built_in">console</span>.log(msg)
+        loginThisUser(messageText, msg.from.username).then(<span class="hljs-function"><span class="hljs-params">walletId</span> =&gt;</span> {
+          chatStatus[chatId].walletId = walletId;
+          chatStatus[chatId].myName = messageText;
+          walletChats[walletId] = chatId;
+          chatStatus[chatId].entryMode = <span class="hljs-string">""</span>;
+          bot.sendMessage(chatId, <span class="hljs-string">'You\'re logged in! Type /chat to start a chat'</span>);
+        }).catch(<span class="hljs-function"><span class="hljs-params">error</span> =&gt;</span> {
+          bot.sendMessage(chatId, <span class="hljs-string">'Unable to login, please check that your ChainedIn username is correct &amp; try re-entering your Telegram ID to the web platform'</span>);
+        })
+      <span class="hljs-keyword">break</span>;
+      <span class="hljs-keyword">case</span> <span class="hljs-string">'/chat'</span>:
+        getWalletForUser(messageText).then(<span class="hljs-function"><span class="hljs-params">walletId</span> =&gt;</span> {
+          <span class="hljs-keyword">if</span> (walletChats[walletId]) {
+            bot.sendMessage(chatId, <span class="hljs-string">`Chat initiated with <span class="hljs-subst">${messageText}</span>, reply to this message to send a message to <span class="hljs-subst">${messageText}</span>. In the future, use the reply function on their messages to continue messaging them.`</span>).then(<span class="hljs-function"><span class="hljs-params">result</span> =&gt;</span> {
+              chatStatus[chatId].messages[result.message_id] = walletId;
+            })
+          } <span class="hljs-keyword">else</span> {
+            bot.sendMessage(chatId, <span class="hljs-string">`User <span class="hljs-subst">${messageText}</span> has not logged in to the the ChainedIn bot. Please try again later`</span>);
+          }
+        }).catch(<span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> {
+          bot.sendMessage(chatId, <span class="hljs-string">`User <span class="hljs-subst">${messageText}</span> was not found, please check their ChainedIn username and try again`</span>);
+        })
+        chatStatus[chatId].entryMode = <span class="hljs-string">""</span>;
+      <span class="hljs-keyword">break</span>;
+    }
+    <span class="hljs-keyword">return</span>;
+  }
+
+  <span class="hljs-keyword">switch</span>(firstWord) {
+    <span class="hljs-keyword">case</span> <span class="hljs-string">'/start'</span>:
+      <span class="hljs-keyword">if</span> (chatStatus[chatId] == <span class="hljs-literal">undefined</span>) {
+        bot.sendMessage(chatId, <span class="hljs-string">'Welcome to the ChainedIn bot! Please type your ChainedIn username to login'</span>);
+      } <span class="hljs-keyword">else</span> {
+        walletChats[walletId] = <span class="hljs-literal">undefined</span>
+        chatStatus[chatId] = <span class="hljs-literal">undefined</span>
+        bot.sendMessage(chatId, <span class="hljs-string">'You\'ve been logged out! Please type your ChainedIn username to login'</span>);
+      }
+      chatStatus[chatId] = {<span class="hljs-attr">entryMode</span>: firstWord, <span class="hljs-attr">messages</span>: {}};
+    <span class="hljs-keyword">break</span>;
+    <span class="hljs-keyword">case</span> <span class="hljs-string">'/chat'</span>:
+      <span class="hljs-keyword">if</span> (chatStatus[chatId] == <span class="hljs-literal">undefined</span>) {
+        bot.sendMessage(chatId, <span class="hljs-string">'Please type /start to login'</span>);
+      } <span class="hljs-keyword">else</span> {
+        bot.sendMessage(chatId, <span class="hljs-string">'Enter the ChainedIn username of a user you\'d like to chat with'</span>);
+        chatStatus[chatId].entryMode = firstWord;
+      }
+    <span class="hljs-keyword">break</span>;
+    <span class="hljs-keyword">default</span>:
+      <span class="hljs-keyword">if</span> (!chatStatus[chatId]) {
+        bot.sendMessage(chatId, <span class="hljs-string">'You\'re not logged in, please type /start to begin'</span>);
+      } <span class="hljs-keyword">else</span> {
+        <span class="hljs-keyword">if</span> (msg.reply_to_message?.message_id) {
+          <span class="hljs-keyword">const</span> otherWallet = chatStatus[chatId].messages[msg.reply_to_message.message_id];
+          <span class="hljs-built_in">console</span>.log(chatStatus[chatId])
+          <span class="hljs-keyword">if</span> (otherWallet) {
+            bot.sendMessage(walletChats[otherWallet], <span class="hljs-string">`<span class="hljs-subst">${chatStatus[chatId].myName}</span> said:\n<span class="hljs-subst">${messageText}</span>`</span>).then(<span class="hljs-function"><span class="hljs-params">result</span> =&gt;</span> {
+              chatStatus[walletChats[otherWallet]].messages[result.message_id] = chatStatus[chatId].walletId;
+            })
+          }
+        } <span class="hljs-keyword">else</span> {
+          bot.sendMessage(chatId, <span class="hljs-string">'Either reply to another user\'s message or type /chat to start a new chat'</span>);
+        }
+      }
+  }
+});
+</pre>
+        </td>
+      </tr>
+    
+  </tbody>
+</table>
+
+  </div>
+</body>
+</html>
